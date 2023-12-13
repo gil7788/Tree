@@ -1,6 +1,6 @@
 # test_my_script.py
 import pytest
-from script import main
+from src.script import main
 
 
 @pytest.mark.parametrize(
