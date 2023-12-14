@@ -1,22 +1,29 @@
 import argparse
 
-
-def process_arguments(args):
-    result = f"Received string: {args.string}, Received integer: {args.integer}, Verbose: {'on' if args.verbose else 'off'}"
-    return result
+from tree import parse_ignore_files_and_tree_included_only
 
 
-def main(args=None):
-    parser = argparse.ArgumentParser(description="Example script.sh that accepts command-line arguments.")
+def main():
+    parser = argparse.ArgumentParser(
+        description="Process files and display in a tree structure excluding specified patterns and directories.")
+    parser.add_argument('-f', '--files', nargs='*', help='List of files to exclude', default=[])
+    parser.add_argument('-d', '--dirs', nargs='*', help='List of directories to exclude', default=[])
+    parser.add_argument('-g', '--gitignore', action='store_true', help='Use .gitignore files for exclusions')
+    parser.add_argument('-k', '--dockerignore', action='store_true', help='Use .dockerignore files for exclusions')
+    parser.add_argument('path', help='Directory path to process')
+    parser.add_argument('--depth', type=int, help='Depth to traverse', default=1)
 
-    parser.add_argument("-s", "--string", type=str, default='', help="A string argument")
-    parser.add_argument("-i", "--integer", type=int, default=0, help="An integer argument")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose mode")
+    args = parser.parse_args()
 
-    args = parser.parse_args(args)
+    parse_ignore_files_and_tree_included_only(
+        user_excluded_files=args.files,
+        user_excluded_dirs=args.dirs,
+        gitignore=args.gitignore,
+        dockerignore=args.dockerignore,
+        path=args.path,
+        depth=args.depth
+    )
 
-    return process_arguments(args)
 
-
-if __name__ == "__main__":
-    print(main())
+if __name__ == '__main__':
+    main()
