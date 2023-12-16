@@ -1,41 +1,39 @@
 import os
 
 
-def get_files(path, depth=1, excluded_files=[], excluded_directories=[]):
-    """
-    Recursively lists files in a given directory up to a specified depth.
-
-    Args:
-    - path (str): The path to the directory.
-    - depth (int): The depth to traverse. 1 means only the given directory.
-    - excluded_files (list): List of filenames to exclude.
-    - excluded_directories (list): List of directory names to exclude.
-
-    Returns:
-    - list: A list of file paths.
-    """
+def get_files(path, depth=None, excluded_files=[], excluded_directories=[]):
     files = []
     # Normalize excluded directories to their absolute paths
     excluded_directories = [os.path.join(path, d) for d in excluded_directories]
 
+    start_level = path.rstrip(os.sep).count(os.sep)
     for root, dirs, filenames in os.walk(path):
-        # Check if current depth exceeds the specified depth
-        if root[len(path):].count(os.sep) >= depth:
+        # Calculate current level
+        current_level = root.count(os.sep) - start_level
+
+        # If depth is provided and current level exceeds it, stop going deeper
+        if depth is not None and current_level >= depth:
             del dirs[:]
-            continue
 
-        # Exclude specified directories
-        dirs[:] = [d for d in dirs if os.path.join(root, d) not in excluded_directories]
+        # Include directories at the current level
+        for dir in dirs:
+            dir_path = os.path.join(root, dir)
+            if dir_path not in excluded_directories:
+                files.append(dir_path)
+            else:
+                # Remove excluded directories from the list of directories to traverse
+                dirs.remove(dir)
 
-        # Add files to list, excluding the specified files
+        # Include files at the current level
         for filename in filenames:
+            file_path = os.path.join(root, filename)
             if filename not in excluded_files:
-                files.append(os.path.join(root, filename))
+                files.append(file_path)
 
     return files
 
 
-def parse_all_ignore_files_in_sub_directories(path, depth=1, gitignore=False, dockerignore=False):
+def parse_all_ignore_files_in_sub_directories(path, depth=None, gitignore=False, dockerignore=False):
     """
     Recursively parses all .gitignore and .dockerignore files in a given directory up to a specified depth.
 
@@ -53,7 +51,7 @@ def parse_all_ignore_files_in_sub_directories(path, depth=1, gitignore=False, do
 
     for root, dirs, filenames in os.walk(path):
         # Check if current depth exceeds the specified depth
-        if root[len(path):].count(os.sep) >= depth:
+        if depth is not None and root[len(path):].count(os.sep) >= depth:
             del dirs[:]
             continue
 
@@ -74,52 +72,29 @@ def parse_all_ignore_files_in_sub_directories(path, depth=1, gitignore=False, do
 
 
 def get_gitignore_exclusions(gitignore_path):
-    """
-    Parses a .gitignore file and returns lists of excluded files and directories.
-
-    Args:
-    - gitignore_path (str): The path to the .gitignore file.
-
-    Returns:
-    - tuple: A tuple containing two lists: excluded_files and excluded_directories.
-    """
     return parse_ignore_file(gitignore_path)
 
 
 def get_dockerignore_exclusions(dockerignore_path):
-    """
-    Parses a .dockerignore file and returns lists of excluded files and directories.
-
-    Args:
-    - dockerignore_path (str): The path to the .dockerignore file.
-
-    Returns:
-    - tuple: A tuple containing two lists: excluded_files and excluded_directories.
-    """
     return parse_ignore_file(dockerignore_path)
 
 
 def parse_ignore_file(file_path):
-    """
-    Parses a .gitignore or .dockerignore file and returns lists of excluded files and directories.
-
-    Args:
-    - file_path (str): The path to the .gitignore or .dockerignore file.
-
-    Returns:
-    - tuple: A tuple containing two lists: excluded_files and excluded_directories.
-    """
     excluded_files = []
     excluded_directories = []
 
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
             for line in file:
-                line = line.strip()
-                if line and not line.startswith("#"):
-                    if line.endswith('/'):
-                        excluded_directories.append(line[:-1])
-                    else:
-                        excluded_files.append(line)
+                parse_line(line, excluded_directories, excluded_files)
 
     return excluded_files, excluded_directories
+
+
+def parse_line(line, excluded_directories, excluded_files):
+    line = line.strip()
+    if line and not line.startswith("#"):
+        if line.endswith('/'):
+            excluded_directories.append(line[:-1])
+        else:
+            excluded_files.append(line)

@@ -11,7 +11,7 @@ def main():
     parser.add_argument('-g', '--gitignore', action='store_true', help='Use .gitignore files for exclusions')
     parser.add_argument('-k', '--dockerignore', action='store_true', help='Use .dockerignore files for exclusions')
     parser.add_argument('path', help='Directory path to process')
-    parser.add_argument('--depth', type=int, help='Depth to traverse', default=1)
+    parser.add_argument('--depth', type=int, help='Depth to traverse', default=None)
 
     args = parser.parse_args()
 
